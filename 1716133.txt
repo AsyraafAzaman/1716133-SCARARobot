@@ -1,0 +1,173 @@
+1.0	%% DH parameters
+2.0	d1 = 5;
+3.0	%d3 = 2.5;
+4.0	a1 = 6;
+5.0	a2 = 6;
+6.0	 
+7.0	%% Link Description
+8.0	 
+9.0	% Link([theta, d, a, alpha, R/P])
+10.0	L(1) = Link([0,d1,a1,0,0],'standard');%theta 1
+11.0	L(2) = Link([0,0,a2,pi,0],'standard');%theta 2
+12.0	L(3) = Link([0,0,0,0,1],'standard');%d3%prismatic
+13.0	L(3).qlim = [0,10];    
+14.0	L(4) = Link([0,0,0,0,0],'standard');%theta 4
+15.0	 
+16.0	%% SerialLink to make robot
+17.0	 
+18.0	robot = SerialLink(L,'name','SekaRA Robot');
+19.0	% robot.plot([0 0 0 0],'workspace',[-15 15 -15 15 -15 15]);
+20.0	% robot.teach
+21.0	 
+22.0	%% get path
+23.0	 
+24.0	prompt = 'Choose the path flow whether in Continous,C or Discrete,D ,(C=1 or D=0) \nuser input : ';
+25.0	a = input(prompt);
+26.0	matrix = getmatrix(a);
+27.0	 
+28.0	%% Transformation Matrix
+29.0	 
+30.0	qinit = [0 0 0 0];%initial position x = 12, y = 0, z = 5
+31.0	 
+32.0	T1 = transl(matrix(1,1),matrix(1,2),matrix(1,3));
+33.0	T2 = transl(matrix(2,1),matrix(2,2),matrix(2,3));
+34.0	T3 = transl(matrix(3,1),matrix(3,2),matrix(3,3));
+35.0	T4 = transl(matrix(4,1),matrix(4,2),matrix(4,3));
+36.0	 
+37.0	 
+38.0	%% use inverse kinematics to get joint angle
+39.0	 
+40.0	q1 = robot.ikine(T1,qinit,[1,1,1,0,0,0]);
+41.0	q2 = robot.ikine(T2,q1,[1,1,1,0,0,0]);
+42.0	q3 = robot.ikine(T3,q2,[1,1,1,0,0,0]);
+43.0	q4 = robot.ikine(T4,q3,[1,1,1,0,0,0]);
+44.0	 
+45.0	%% use forwardkinematics to find the x,y,z ( to verify the joinnt angle that got from the inverese kinematics )
+46.0	 
+47.0	q1_T1 = robot.fkine(q1);
+48.0	q2_T2 = robot.fkine(q2);
+49.0	q3_T3 = robot.fkine(q3);
+50.0	q4_T4 = robot.fkine(q4);
+51.0	 
+52.0	%% Animation
+53.0	 
+54.0	t =(0: .05:3)'; %time vector for where one transformation took 3 seconds + pause(0.02) before undergo next transformations;
+55.0	 
+56.0	% The trajectory of this scara is :
+57.0	% qinit -> q1 -> q2 -> q3 -> q4 -> q1 -> qinit
+58.0	 
+59.0	 
+60.0	% First Transformation = initial position to 1st position 
+61.0	transformation1 = jtraj(qinit,q1,t);
+62.0	robot.plot(transformation1,'workspace',[-15 15 -15 15 -15 15]);
+63.0	pause(0.02);
+64.0	 
+65.0	% Second Transformation = 1st position to 2nd position 
+66.0	transformation2 = jtraj(q1,q2,t);
+67.0	robot.plot(transformation2,'workspace',[-15 15 -15 15 -15 15]);
+68.0	pause(0.02);
+69.0	 
+70.0	% Third Transformation = 2nd position to 3rd position 
+71.0	transformation3 = jtraj(q2,q3,t);
+72.0	robot.plot(transformation3,'workspace',[-15 15 -15 15 -15 15]);
+73.0	pause(0.02);
+74.0	 
+75.0	% Fourth Transformation = 3rd position to 4th position 
+76.0	transformation4 = jtraj(q3,q4,t);
+77.0	robot.plot(transformation4,'workspace',[-15 15 -15 15 -15 15]);
+78.0	pause(0.02);
+79.0	 
+80.0	% Fifth Transformation = 4th position to 1st position 
+81.0	transformation5 = jtraj(q4,q1,t);
+82.0	robot.plot(transformation5,'workspace',[-15 15 -15 15 -15 15]);
+83.0	pause(0.02);
+84.0	 
+85.0	% Sixth Transformation = 1st position to initial position 
+86.0	transformation6 = jtraj(q1,qinit,t);
+87.0	robot.plot(transformation6,'workspace',[-15 15 -15 15 -15 15]);
+88.0	pause(0.02);
+89.0	 
+90.0	%% to plot the trajectory path
+91.0	 
+92.0	trajectory = [12 0 5; 
+93.0	            matrix(1,:);
+94.0	            matrix(2,:);
+95.0	            matrix(3,:);
+96.0	            matrix(4,:);
+97.0	            12 0 5];
+98.0	[nx,ny] = size(trajectory) ;
+99.0	figure
+100.0	hold on
+101.0	 
+102.0	for i = 1:nx-1
+103.0	    v=[trajectory(i,:);trajectory(i+1,:)];
+104.0	    plot3(v(:,1),v(:,2),v(:,3),'g');
+105.0	    plot3(v(:,1),v(:,2),v(:,3),'bo')
+106.0	end
+107.0	 
+108.0	text(trajectory(1,1),trajectory(1,2),trajectory(1,3), ' initial    position');
+109.0	text(trajectory(2,1),trajectory(2,2),trajectory(2,3), ' T1');
+110.0	text(trajectory(3,1),trajectory(3,2),trajectory(3,3), ' T2');
+111.0	text(trajectory(4,1),trajectory(4,2),trajectory(4,3), ' T3');
+112.0	text(trajectory(5,1),trajectory(5,2),trajectory(5,3), ' T4');
+113.0	 
+114.0	 
+115.0	 xlabel('X');
+116.0	 ylabel('Y');
+117.0	 zlabel('Z');
+118.0	 
+119.0	view(3);
+120.0	 
+121.0	%% if condition to show data
+122.0	 
+123.0	pause(2);
+124.0	 
+125.0	prompt1 = 'Permission to show data,(Yes=1 or No=0) \nuser input : ';
+126.0	a = input(prompt1);
+127.0	 
+128.0	if a==1
+129.0	    showdata(matrix,q1,q2,q3,q4);
+130.0	end
+131.0	if a==0
+132.0	    disp('\ntable will not shown');
+133.0	end
+134.0	 
+135.0	 
+136.0	%% show data table contains of x, y, z, theta1_radians and theta2_radians
+137.0	 
+138.0	function showdata(m1,Q1,Q2,Q3,Q4)
+139.0	 
+140.0	close all;
+141.0	col = {'x','y','z','theta1_radians','theta2_radians'};
+142.0	row = {'T1','T2','T3','T4'};
+143.0	datatable = [ m1(1,:) Q1(1,1:2); m1(2,:) Q2(1,1:2); m1(3,:) Q3(1,1:2); m1(4,:) Q4(1,1:2)];
+144.0	figure;
+145.0	DATAtable = uitable('columnname',col,'rowname',row,'position',[50 50 700 200],'columnwidth',{100},'data',datatable);
+146.0	 
+147.0	end
+148.0	 
+149.0	%% get continuous or discrete transformation matrix
+150.0	 
+151.0	function [g] = getmatrix(b)
+152.0	if b==0
+153.0	    g = [4 4 5;
+154.0	            4 -4 5;
+155.0	            -4 -4 5;
+156.0	            -4 4 5;];
+157.0	    return;
+158.0	end
+159.0	 if b==1
+160.0	        g = [7 7 7;
+161.0	            7 -7 1.5;
+162.0	            -7 -7 -3;
+163.0	            -7 7 6;];
+164.0	        return;
+165.0	 end
+166.0	    
+167.0	 
+168.0	 
+169.0	end
+170.0	 
+171.0	 
+172.0	 
+173.0	
